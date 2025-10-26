@@ -1,0 +1,150 @@
+#include "IO.hpp"
+#include "LAPIC.hpp"
+
+namespace
+{
+    static inline void WriteMSR(std::uint32_t msr, std::uint64_t value)
+    {
+        std::uint32_t lo = static_cast<std::uint32_t>(value & 0xFFFFFFFFull);
+        std::uint32_t hi = static_cast<std::uint32_t>(value >> 32);
+        asm volatile("wrmsr" : : "c"(msr), "a"(lo), "d"(hi) : );
+    }
+
+    static inline std::uint64_t ReadMSR(std::uint32_t msr)
+    {
+        std::uint32_t lo, hi;
+        asm volatile("rdmsr" : "=a"(lo), "=d"(hi) : "c"(msr) : );
+        return ((static_cast<std::uint64_t>(hi) << 32) | lo);
+    }
+
+    constexpr std::uint32_t MSR_IA32_APIC_BASE = 0x1B;
+    constexpr std::uint64_t APIC_BASE_BSP = 1ull << 8;
+    constexpr std::uint64_t APIC_BASE_EXTD = 1ull << 10;
+    constexpr std::uint64_t APIC_BASE_EN = 1ull << 11;
+    constexpr std::uint64_t APIC_BASE_ADDR_MASK = 0xFFFFF000ull;
+    constexpr std::uint32_t LAPIC_ID = 0x020;
+    constexpr std::uint32_t LAPIC_VERSION = 0x030;
+    constexpr std::uint32_t LAPIC_TPR = 0x080;
+    constexpr std::uint32_t LAPIC_EOI = 0x0B0;
+    constexpr std::uint32_t LAPIC_SVR = 0x0F0;
+    constexpr std::uint32_t LAPIC_ESR = 0x280;
+    constexpr std::uint32_t LAPIC_ICR_LOW = 0x300;
+    constexpr std::uint32_t LAPIC_ICR_HIGH = 0x310;
+    constexpr std::uint32_t LAPIC_LVT_TIMER = 0x320;
+    constexpr std::uint32_t LAPIC_LVT_THERMAL = 0x330;
+    constexpr std::uint32_t LAPIC_LVT_PERF = 0x340;
+    constexpr std::uint32_t LAPIC_LVT_LINT0 = 0x350;
+    constexpr std::uint32_t LAPIC_LVT_LINT1 = 0x360;
+    constexpr std::uint32_t LAPIC_LVT_ERROR = 0x370;
+    constexpr std::uint32_t LAPIC_TIMER_INIT = 0x380;
+    constexpr std::uint32_t LAPIC_TIMER_CURR = 0x390;
+    constexpr std::uint32_t LAPIC_TIMER_DIV = 0x3E0;
+    constexpr std::uint32_t SVR_APIC_ENABLE = 1u << 8;
+    constexpr std::uint32_t SVR_SUPPRESS_BCAST_EOI = 1u << 12;
+    constexpr std::uint32_t LVT_MASKED = 1u << 16;
+
+    volatile std::uint32_t* gLAPICMMIO = nullptr;
+    bool gLAPICReady = false;
+
+    inline std::uint32_t LAPICMMIORead(std::uint32_t offset) noexcept
+    {
+        return *reinterpret_cast<volatile std::uint32_t*>((std::uintptr_t)gLAPICMMIO + offset);
+    }
+
+    inline void LAPICMMIOWrite(std::uint32_t offset, std::uint32_t value) noexcept
+    {
+        *reinterpret_cast<volatile std::uint32_t*>((std::uintptr_t)gLAPICMMIO + offset) = value;
+        (void)LAPICMMIORead(LAPIC_ID);
+    }
+
+    inline void CPUID_1(std::uint32_t& eax, std::uint32_t& ebx, std::uint32_t& ecx, std::uint32_t& edx) noexcept
+    {
+        eax = 1;
+        asm volatile(
+            "cpuid"
+            : "+a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx)
+            : : "cc"
+            );
+    }
+}
+
+namespace Kernel::Arch::x86_64::APIC
+{
+    bool IsPresent() noexcept
+    {
+        std::uint32_t a, b, c, d;
+        CPUID_1(a, b, c, d);
+        return (d & (1u << 9)) != 0;
+    }
+
+    void Enable() noexcept
+    {
+        auto apicBase = ReadMSR(MSR_IA32_APIC_BASE);
+        apicBase |= APIC_BASE_EN;
+        apicBase &= ~APIC_BASE_EXTD;
+
+        WriteMSR(MSR_IA32_APIC_BASE, apicBase);
+
+        std::uintptr_t base = static_cast<std::uintptr_t>(apicBase & APIC_BASE_ADDR_MASK);
+        gLAPICMMIO = reinterpret_cast<volatile std::uint32_t*>(base);
+    }
+
+    void InitializeEarly(std::uint8_t spuriousVector, std::uint8_t errorVector) noexcept
+    {
+        if (!gLAPICMMIO)
+        {
+            Enable();
+        }
+
+        if (spuriousVector < 0x20)
+        {
+            spuriousVector = 0xFF;
+        }
+        if (spuriousVector < 0x20)
+        {
+            errorVector = 0xF1;
+        }
+
+        LAPICMMIOWrite(LAPIC_TPR, 0);
+
+        LAPICMMIOWrite(LAPIC_LVT_TIMER, LVT_MASKED | 0xF0);
+        LAPICMMIOWrite(LAPIC_LVT_PERF, LVT_MASKED | 0xF2);
+        LAPICMMIOWrite(LAPIC_LVT_THERMAL, LVT_MASKED | 0xF3);
+        LAPICMMIOWrite(LAPIC_LVT_LINT0, LVT_MASKED | 0xF4);
+        LAPICMMIOWrite(LAPIC_LVT_LINT1, LVT_MASKED | 0xF5);
+        LAPICMMIOWrite(LAPIC_LVT_ERROR, errorVector);
+
+        LAPICMMIOWrite(LAPIC_ESR, 0);
+        (void)LAPICMMIORead(LAPIC_ESR);
+
+        LAPICMMIOWrite(LAPIC_SVR, SVR_APIC_ENABLE | spuriousVector);
+
+        LAPICMMIOWrite(LAPIC_EOI, 0);
+
+        gLAPICReady = true;
+    }
+
+    void EndOfInterrupt() noexcept
+    {
+        if (gLAPICMMIO)
+        {
+            LAPICMMIOWrite(LAPIC_EOI, 0);
+        }
+    }
+
+    std::uint32_t ReadLAPICID() noexcept
+    {
+        return gLAPICMMIO ? (LAPICMMIORead(LAPIC_ID) >> 24) : 0xFFFFFFFFu;
+    }
+
+    std::uint32_t ReadLAPICVersion() noexcept
+    {
+        return gLAPICMMIO ? (LAPICMMIORead(LAPIC_VERSION) & 0xFFu) : 0xFFFFFFFFu;
+    }
+
+    void DisableLegacyPIC() noexcept
+    {
+        IO::Out8(0x21, 0xFF);
+        IO::Out8(0xA1, 0xFF);
+    }
+}

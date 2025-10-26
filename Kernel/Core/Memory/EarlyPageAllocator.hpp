@@ -1,0 +1,27 @@
+#pragma once
+
+#include "RefCountedBase.hpp"
+#include "IPageAllocator.hpp"
+
+namespace Kernel::Early
+{
+    class EarlyPageAllocator final : public virtual IPageAllocator, public RefCountedBase
+    {
+    public:
+        EarlyPageAllocator() noexcept = default;
+        EarlyPageAllocator(const EarlyPageAllocator&) noexcept = delete;
+        EarlyPageAllocator(EarlyPageAllocator&&) noexcept = delete;
+        virtual void* AllocatePage() noexcept override;
+
+        /// @brief 最小サイズを満たす数のページを確保（例：1ページ4096、minSize = 5000なら2ページ割り当て）
+        /// @param minSize 最小サイズ
+        /// @return 確保した領域へのポインタ
+        virtual void* AllocatePage(std::size_t minSize) noexcept;
+
+        virtual void FreePage(void* ptr)noexcept override;
+        virtual void FreePage(void* ptr, std::size_t allocatedSize)noexcept;
+        virtual std::size_t GetAvailableSize() const noexcept override;
+    protected:
+        virtual ~EarlyPageAllocator() override = default;
+    };
+}

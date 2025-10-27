@@ -29,13 +29,13 @@ namespace
     } __attribute__((packed));
 }
 
+ALLOC_STATIC_BUFFER_FOR_PLACEMENT_NEW(Kernel::Early::EarlyPageAllocator, earlyPageAllocatorBuffer);
+ALLOC_STATIC_BUFFER_FOR_PLACEMENT_NEW(Kernel::Arch::x86_64::APIC::APICController, apicControllerBuffer);
+ALLOC_STATIC_BUFFER_FOR_PLACEMENT_NEW(Kernel::ACPIManager, acpiManagerBuffer);
+
 extern "C" void main(BootInfo* info)
 {
     using namespace Kernel;
-
-    ALLOC_STATIC_BUFFER_FOR_PLACEMENT_NEW(Kernel::Early::EarlyPageAllocator, earlyPageAllocatorBuffer);
-    ALLOC_STATIC_BUFFER_FOR_PLACEMENT_NEW(Arch::x86_64::APIC::APICController, apicControllerBuffer);
-    ALLOC_STATIC_BUFFER_FOR_PLACEMENT_NEW(Kernel::ACPIManager, acpiManagerBuffer);
 
     std::uint64_t cr3;
 

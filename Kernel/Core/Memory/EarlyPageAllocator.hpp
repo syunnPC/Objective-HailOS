@@ -1,11 +1,12 @@
 #pragma once
 
+#include "BaseType.hpp"
 #include "RefCountedBase.hpp"
 #include "IPageAllocator.hpp"
 
 namespace Kernel::Early
 {
-    class EarlyPageAllocator final : public virtual IPageAllocator, public RefCountedBase
+    class EarlyPageAllocator final : public RefCountedBase, public virtual IPageAllocator
     {
     public:
         EarlyPageAllocator() noexcept = default;

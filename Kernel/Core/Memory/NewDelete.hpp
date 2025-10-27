@@ -1,7 +1,9 @@
+#pragma once
+
 #include "MemoryInfo.hpp"
-#include "EarlyPageAllocator.hpp"
 
 namespace Kernel::Early
 {
+    class EarlyPageAllocator;
     void InitOperatorNew(EarlyPageAllocator& alloc) noexcept;
 }

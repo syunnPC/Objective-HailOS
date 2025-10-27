@@ -3,6 +3,7 @@
 #include <atomic>
 
 #include "IKernelObject.hpp"
+#include "NewDelete.hpp"
 
 namespace Kernel
 {
@@ -20,7 +21,7 @@ namespace Kernel
         {
             if (m_RefCount.fetch_sub(1, std::memory_order_acq_rel) == 1)
             {
-                //TODO:メモリ管理実装後にdelete this;
+                delete this;
             }
         }
 

@@ -3,6 +3,7 @@
 #include "MemoryInfo.hpp"
 #include "EarlyPageAllocator.hpp"
 #include "Panic.hpp"
+#include "MemoryUtility.hpp"
 
 namespace Kernel::Early
 {
@@ -58,6 +59,11 @@ void operator delete(void* p) noexcept
 void operator delete(void* p, const std::nothrow_t&) noexcept
 {
     auto allocatedAddr = reinterpret_cast<Kernel::Early::AllocatedMemoryInfo*>(p) - 1;
+    if (!Library::Memory::CompareMemory(allocatedAddr->Magic, "KMEM", sizeof(allocatedAddr->Magic)))
+    {
+        return;
+    }
+
     auto page = allocatedAddr->AllocatedPages;
     Kernel::Early::gEarlyAlloc->FreePage(allocatedAddr, page);
 }

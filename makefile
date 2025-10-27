@@ -1,169 +1,72 @@
-#もしこのmakefileがちゃんと動かない（cstdlibなどの探索でエラーが出る）ときは
-#以下のコマンドラインを試す（gcc/g++のインストールが必要）
-# make clean && make V=1   STDCPP_INC=/home/linuxbrew/.linuxbrew/Cellar/gcc/15.2.0/include/c++/15   STDCPP_INC_TRIPLE=/home/linuxbrew/.linuxbrew/Cellar/gcc/15.2.0/include/c++/15/x86_64-pc-linux-gnu
-#x86_64-elf-gccにC++標準ライブラリがないのが原因だと思う
-
-TARGET_ARCH = x86_64
-TARGET_TRIPLET = $(TARGET_ARCH)-elf
+TARGET_ARCH   = x86_64
+TARGET_TRIPLET= $(TARGET_ARCH)-elf
 CXX = $(TARGET_TRIPLET)-g++
 CC  = $(TARGET_TRIPLET)-gcc
-AS  = $(TARGET_TRIPLET)-as
 LD  = $(TARGET_TRIPLET)-ld
-OBJCOPY = $(TARGET_TRIPLET)-objcopy
 
 BUILD_DIR = Build
 OBJ_DIR   = $(BUILD_DIR)/obj
-KERNEL_ELF = $(BUILD_DIR)/kernel.elf
-
-KERNEL_DIR  = Kernel
-LIBRARY_DIR = Library
-
-KERNEL_ARCH_DIR      = $(KERNEL_DIR)/Arch/x86_64
-KERNEL_BOOT_DIR      = $(KERNEL_ARCH_DIR)/Boot
-KERNEL_APIC_DIR      = $(KERNEL_ARCH_DIR)/APIC
-KERNEL_CPU_DIR       = $(KERNEL_ARCH_DIR)/CPU
-KERNEL_CPU_INT_DIR   = $(KERNEL_CPU_DIR)/Interrupt
-KERNEL_IO_DIR        = $(KERNEL_ARCH_DIR)/IO
-KERNEL_PAGING_DIR    = $(KERNEL_ARCH_DIR)/Paging
-KERNEL_UTIL_DIR      = $(KERNEL_ARCH_DIR)/Utility
-
-CORE_DIR         = $(KERNEL_DIR)/Core
-CORE_ACPI_DIR    = $(CORE_DIR)/ACPI
-CORE_ERR_DIR     = $(CORE_DIR)/ErrorHandling
-CORE_CONSOLE_DIR = $(CORE_DIR)/KernelConsole
-CORE_MEM_DIR     = $(CORE_DIR)/Memory
-CORE_TIMER_DIR   = $(CORE_DIR)/Timer
-
-INCLUDE_DIR             = $(KERNEL_DIR)/Include
-INCLUDE_CORE_DIR        = $(INCLUDE_DIR)/Core
-INCLUDE_CORE_RAND_DIR   = $(INCLUDE_CORE_DIR)/RandomDevice
-INCLUDE_CORE_UUID_DIR   = $(INCLUDE_CORE_DIR)/UUID
-INCLUDE_CORE_MEMORY_DIR = $(INCLUDE_CORE_DIR)/Memory
-INCLUDE_OBJECT_DIR      = $(INCLUDE_DIR)/Object
-INCLUDE_OBJECT_IF_DIR   = $(INCLUDE_OBJECT_DIR)/Interface
-INCLUDE_UTIL_DIR        = $(INCLUDE_DIR)/Utility
-
-LIB_MEMORY_DIR = $(LIBRARY_DIR)/Memory
-LIB_STRING_DIR = $(LIBRARY_DIR)/String
+KERNEL_ELF= $(BUILD_DIR)/kernel.elf
 
 CXXFLAGS_COMMON = -g -ffreestanding -Wall -Wextra -mno-red-zone -mcmodel=kernel -fno-pie -fno-stack-protector -O0 -std=c++23 -fno-exceptions -fno-rtti
-CXXFLAGS = $(CXXFLAGS_COMMON)
-CFLAGS   = -g -ffreestanding -Wall -Wextra -mno-red-zone -mcmodel=kernel -fno-pie -fno-stack-protector -O0 -std=c11
-ASFLAGS  = -g
+CXXFLAGS          = $(CXXFLAGS_COMMON)
+CXXFLAGS_INTERRUPT= $(CXXFLAGS_COMMON) -mgeneral-regs-only
+CFLAGS            = -g -ffreestanding -Wall -Wextra -mno-red-zone -mcmodel=kernel -fno-pie -fno-stack-protector -O0 -std=c11
+ASFLAGS           = -g
+LDSCRIPT          = linker.ld
+LDFLAGS           = -T $(LDSCRIPT) -nostdlib -n
 
-CXXFLAGS_INTERRUPT = $(CXXFLAGS_COMMON) -mgeneral-regs-only
+TP_STDXX_ROOT_A     := ThirdParty/stdcxx
+TP_CXX_INC_A        := $(TP_STDXX_ROOT_A)/cxx
+TP_CXX_TRIPLE_INC_A := $(TP_STDXX_ROOT_A)/cxx_triple
+TP_GLIBC_INC_A      := $(TP_STDXX_ROOT_A)/glibc
 
-INCLUDES = \
-  -I$(KERNEL_DIR) \
-  -I$(KERNEL_ARCH_DIR) \
-  -I$(KERNEL_APIC_DIR) \
-  -I$(KERNEL_BOOT_DIR) \
-  -I$(KERNEL_CPU_DIR) \
-  -I$(KERNEL_CPU_INT_DIR) \
-  -I$(KERNEL_IO_DIR) \
-  -I$(KERNEL_PAGING_DIR) \
-  -I$(KERNEL_UTIL_DIR) \
-  -I$(CORE_DIR) \
-  -I$(CORE_ACPI_DIR) \
-  -I$(CORE_ERR_DIR) \
-  -I$(CORE_CONSOLE_DIR) \
-  -I$(CORE_MEM_DIR) \
-  -I$(CORE_TIMER_DIR) \
-  -I$(INCLUDE_DIR) \
-  -I$(INCLUDE_CORE_DIR) \
-  -I$(INCLUDE_CORE_RAND_DIR) \
-  -I$(INCLUDE_CORE_UUID_DIR) \
-  -I$(INCLUDE_CORE_MEMORY_DIR) \
-  -I$(INCLUDE_OBJECT_DIR) \
-  -I$(INCLUDE_OBJECT_IF_DIR) \
-  -I$(INCLUDE_UTIL_DIR) \
-  -I$(LIBRARY_DIR) \
-  -I$(LIB_MEMORY_DIR) \
-  -I$(LIB_STRING_DIR)
-
-LDSCRIPT = linker.ld
-LDFLAGS = -T $(LDSCRIPT) -nostdlib -n
-
-ASM_SOURCES = \
-  $(KERNEL_BOOT_DIR)/Boot.S
-
-CPP_SOURCE_INTERRUPT = $(KERNEL_CPU_INT_DIR)/InterruptDispatch.cpp
-
-CPP_SOURCES = \
-  $(KERNEL_APIC_DIR)/APICController.cpp \
-  $(KERNEL_APIC_DIR)/LAPIC.cpp \
-  $(KERNEL_CPU_DIR)/CPU_Init.cpp \
-  $(KERNEL_PAGING_DIR)/Paging.cpp \
-  $(KERNEL_UTIL_DIR)/CriticalSection.cpp \
-  $(CORE_ACPI_DIR)/ACPIManager.cpp \
-  $(CORE_ERR_DIR)/Panic.cpp \
-  $(CORE_CONSOLE_DIR)/KernelConsole.cpp \
-  $(CORE_DIR)/KernelMain.cpp \
-  $(CORE_DIR)/CppRuntime.cpp \
-  $(CORE_MEM_DIR)/EarlyPageAllocator.cpp \
-  $(CORE_MEM_DIR)/NewDelete.cpp \
-  $(CORE_MEM_DIR)/PhysicalMemoryBitmap.cpp \
-  $(CORE_TIMER_DIR)/Timer.cpp \
-  $(INCLUDE_CORE_RAND_DIR)/HardwareRandomDevice.cpp \
-  $(INCLUDE_CORE_UUID_DIR)/UUID.cpp \
-  $(LIB_MEMORY_DIR)/MemoryUtility.cpp
-
-C_SOURCES = \
-  $(CORE_CONSOLE_DIR)/ConsoleFont.c
-
-OBJ_FILES_ASM = $(patsubst %.S,$(OBJ_DIR)/%.o,$(ASM_SOURCES))
-OBJ_FILES_CPP = $(patsubst %.cpp,$(OBJ_DIR)/%.o,$(filter-out $(CPP_SOURCE_INTERRUPT),$(CPP_SOURCES)))
-OBJ_FILE_INTERRUPT = $(patsubst %.cpp,$(OBJ_DIR)/%.o,$(CPP_SOURCE_INTERRUPT))
-OBJ_FILES_C = $(patsubst %.c,$(OBJ_DIR)/%.o,$(C_SOURCES))
-
-ALL_OBJS = $(OBJ_FILES_ASM) $(OBJ_FILES_CPP) $(OBJ_FILE_INTERRUPT) $(OBJ_FILES_C)
-
-HOSTCXX        ?= g++
-HOST_TRIPLE    := $(shell $(HOSTCXX) -dumpmachine)
-HOST_GCC_FULL  := $(shell $(HOSTCXX) -dumpfullversion 2>/dev/null || $(HOSTCXX) -dumpversion)
-HOST_GCC_MAJOR := $(shell echo $(HOST_GCC_FULL) | cut -d. -f1)
-HOST_CXXINC_RT := $(shell $(HOSTCXX) -print-file-name=include/c++)
-
-HOST_INC_VER_DIR := $(firstword \
-  $(wildcard $(HOST_CXXINC_RT)/$(HOST_GCC_FULL)) \
-  $(wildcard $(HOST_CXXINC_RT)/$(HOST_GCC_MAJOR)) \
-)
-
-CXXCFG_BITS_CAND := $(wildcard $(HOST_INC_VER_DIR)/*/bits/c++config.h)
-STDCXX_TRIPLE_DIR := $(patsubst %/bits/c++config.h,%,$(firstword $(CXXCFG_BITS_CAND)))
+TP_STDXX_ROOT_B     := ThirdParty
+TP_CXX_INC_B        := $(TP_STDXX_ROOT_B)/cxx
+TP_CXX_TRIPLE_INC_B := $(TP_STDXX_ROOT_B)/cxx_triple
+TP_GLIBC_INC_B      := $(TP_STDXX_ROOT_B)/glibc
 
 STDCXX_SYSINC :=
-ifneq ($(strip $(HOST_INC_VER_DIR)),)
-  STDCXX_SYSINC += -isystem $(HOST_INC_VER_DIR)
+
+ifneq ("$(wildcard $(TP_CXX_INC_A))","")
+  STDCXX_SYSINC += -isystem $(TP_CXX_INC_A)
 endif
-ifneq ($(strip $(STDCXX_TRIPLE_DIR)),)
-  STDCXX_SYSINC += -isystem $(STDCXX_TRIPLE_DIR)
+ifneq ("$(wildcard $(TP_CXX_TRIPLE_INC_A))","")
+  STDCXX_SYSINC += -isystem $(TP_CXX_TRIPLE_INC_A)
+endif
+ifneq ("$(wildcard $(TP_GLIBC_INC_A))","")
+  STDCXX_SYSINC += -isystem $(TP_GLIBC_INC_A)
 endif
 
-ifneq ($(strip $(STDCPP_INC)),)
-  STDCXX_SYSINC += -isystem $(STDCPP_INC)
+ifneq ("$(wildcard $(TP_CXX_INC_B))","")
+  STDCXX_SYSINC += -isystem $(TP_CXX_INC_B)
 endif
-ifneq ($(strip $(STDCPP_INC_TRIPLE)),)
-  STDCXX_SYSINC += -isystem $(STDCPP_INC_TRIPLE)
+ifneq ("$(wildcard $(TP_CXX_TRIPLE_INC_B))","")
+  STDCXX_SYSINC += -isystem $(TP_CXX_TRIPLE_INC_B)
 endif
-
-ifneq ("$(wildcard /usr/include/features.h)","")
-  STDCXX_SYSINC += -isystem /usr/include
-else ifneq ("$(wildcard /usr/include/x86_64-linux-gnu/features.h)","")
-  STDCXX_SYSINC += -isystem /usr/include/x86_64-linux-gnu
-else ifneq ("$(wildcard /home/linuxbrew/.linuxbrew/include/features.h)","")
-  STDCXX_SYSINC += -isystem /home/linuxbrew/.linuxbrew/include
+ifneq ("$(wildcard $(TP_GLIBC_INC_B))","")
+  STDCXX_SYSINC += -isystem $(TP_GLIBC_INC_B)
 endif
 
-ifneq ("$(wildcard /usr/include/x86_64-linux-gnu/sys/cdefs.h)","")
-  STDCXX_SYSINC += -isystem /usr/include/x86_64-linux-gnu
-else ifneq ("$(wildcard /usr/include/sys/cdefs.h)","")
-  STDCXX_SYSINC += -isystem /usr/include
-else ifneq ("$(wildcard /home/linuxbrew/.linuxbrew/include/sys/cdefs.h)","")
-  STDCXX_SYSINC += -isystem /home/linuxbrew/.linuxbrew/include
-endif
+PROJECT_INCLUDE_DIRS := $(shell find Kernel -type d) $(shell find Library -type d)
+INCLUDES := $(foreach d,$(PROJECT_INCLUDE_DIRS),-I$(d))
 
-export CPLUS_INCLUDE_PATH := $(patsubst -isystem %,%, $(STDCXX_SYSINC)):$(CPLUS_INCLUDE_PATH)
+CPP_SOURCES := $(shell find Kernel -type f -name '*.cpp') \
+               $(shell find Library -type f -name '*.cpp')
+C_SOURCES   := $(shell find Kernel -type f -name '*.c') \
+               $(shell find Library -type f -name '*.c')
+ASM_SOURCES := $(shell find Kernel -type f -name '*.S')
+
+INT_SRC  := Kernel/Arch/x86_64/CPU/Interrupt/InterruptDispatch.cpp
+CPP_SOURCES := $(filter-out $(INT_SRC),$(CPP_SOURCES))
+
+OBJ_CPP  := $(patsubst %.cpp,$(OBJ_DIR)/%.o,$(CPP_SOURCES))
+OBJ_C    := $(patsubst %.c,$(OBJ_DIR)/%.o,$(C_SOURCES))
+OBJ_S    := $(patsubst %.S,$(OBJ_DIR)/%.o,$(ASM_SOURCES))
+INT_OBJ  := $(OBJ_DIR)/$(INT_SRC:.cpp=.o)
+ALL_OBJS := $(OBJ_CPP) $(OBJ_C) $(OBJ_S) $(INT_OBJ)
+
+DEPS := $(ALL_OBJS:.o=.d)
 
 .PHONY: all clean
 all: $(KERNEL_ELF)
@@ -176,22 +79,24 @@ $(KERNEL_ELF): $(ALL_OBJS) $(LDSCRIPT)
 $(OBJ_DIR)/%.o: %.cpp
 	@echo "CXX  $<"
 	@mkdir -p $(@D)
-	$(CXX) $(CXXFLAGS) $(STDCXX_SYSINC) $(INCLUDES) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(STDCXX_SYSINC) $(INCLUDES) -MMD -MP -c $< -o $@
 
-$(OBJ_FILE_INTERRUPT): $(CPP_SOURCE_INTERRUPT)
+$(INT_OBJ): $(INT_SRC)
 	@echo "CXX-INT $<"
 	@mkdir -p $(@D)
-	$(CXX) $(CXXFLAGS_INTERRUPT) $(STDCXX_SYSINC) $(INCLUDES) -c $< -o $@
+	$(CXX) $(CXXFLAGS_INTERRUPT) $(STDCXX_SYSINC) $(INCLUDES) -MMD -MP -c $< -o $@
 
 $(OBJ_DIR)/%.o: %.c
 	@echo "CC   $<"
 	@mkdir -p $(@D)
-	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+	$(CC) $(CFLAGS) $(INCLUDES) -MMD -MP -c $< -o $@
 
 $(OBJ_DIR)/%.o: %.S
 	@echo "AS   $<"
 	@mkdir -p $(@D)
 	$(CC) $(ASFLAGS) $(INCLUDES) -c $< -o $@
+
+-include $(DEPS)
 
 clean:
 	@echo "Cleaning build files..."

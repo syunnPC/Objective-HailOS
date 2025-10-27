@@ -83,11 +83,10 @@ namespace Kernel::Early
 
     inline void InitKernelConsole(GraphicInfo* info) noexcept
     {
-        alignas(KernelConsole) static std::uint8_t ownerBuffer[sizeof(KernelConsole)];
         auto& owner = ConsoleOwner();
         if (!owner)
         {
-            owner = RefPtr<KernelConsole>(new(ownerBuffer) KernelConsole(info));
+            owner = RefPtr<KernelConsole>(new KernelConsole(info));
         }
     }
 

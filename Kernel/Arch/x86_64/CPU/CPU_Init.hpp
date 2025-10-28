@@ -4,7 +4,7 @@
 #include "GDT.hpp"
 #include "TSS.hpp"
 
-namespace Kernel::Boot::x86_64
+namespace Kernel::Arch::x86_64
 {
     extern std::uint8_t gGDT[7 * sizeof(GDTEntry)];
     extern GDTR gGDTPtr;

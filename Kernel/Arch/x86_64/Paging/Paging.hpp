@@ -3,14 +3,14 @@
 #include "MemoryInfo.hpp"
 #include "IPageAllocator.hpp"
 
-namespace Kernel
+namespace Kernel::Arch::x86_64
 {
     inline void LoadCR3(std::uintptr_t pml4Phys)
     {
         asm volatile("mov %0, %%cr3" : : "r"(pml4Phys) : "memory");
     }
 
-    inline std::uint64_t readCR3()
+    inline std::uint64_t ReadCR3()
     {
         std::uint64_t v;
         asm volatile("mov %%cr3, %0" : "=r"(v) :: "memory");

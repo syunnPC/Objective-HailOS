@@ -78,7 +78,7 @@ namespace Kernel::Arch::x86_64
             }
         }
 
-        return static_cast<std::uint16_t>(GetTSC() ^ (GetTSC() >> 16));
+        return static_cast<std::uint16_t>(ReadTSC() ^ (ReadTSC() >> 16));
     }
 
     inline std::uint32_t HwGenerateRandom32()
@@ -92,7 +92,7 @@ namespace Kernel::Arch::x86_64
             }
         }
 
-        return static_cast<std::uint32_t>(GetTSC() ^ (GetTSC() >> 20));
+        return static_cast<std::uint32_t>(ReadTSC() ^ (ReadTSC() >> 20));
     }
 
     inline std::uint64_t HwGenerateRandom64()
@@ -106,6 +106,6 @@ namespace Kernel::Arch::x86_64
             }
         }
 
-        return GetTSC() ^ (GetTSC() >> 24);
+        return ReadTSC() ^ (ReadTSC() >> 24);
     }
 }

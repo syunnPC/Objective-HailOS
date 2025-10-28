@@ -1,7 +1,7 @@
 #include "Paging.hpp"
 #include "MemoryUtility.hpp"
 
-namespace Kernel
+namespace Kernel::Arch::x86_64
 {
     static constexpr std::uint64_t PG_P = 1ull << 0;
     static constexpr std::uint64_t PG_RW = 1ull << 1;

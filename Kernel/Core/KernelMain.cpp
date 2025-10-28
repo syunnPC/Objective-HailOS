@@ -12,6 +12,8 @@
 #include "APICController.hpp"
 #include "InterruptDispatch.hpp"
 #include "Panic.hpp"
+#include "ExceptionHandlers.hpp"
+#include "TimerHandler.hpp"
 
 #include <new>
 
@@ -41,33 +43,43 @@ extern "C" void main(BootInfo* info)
 
     Arch::x86_64::StartCriticalSection();
 
-    Boot::x86_64::InitGDTAndTSS(Boot::x86_64::KernelStackTop);
-    Boot::x86_64::InitIDT();
+    Arch::x86_64::InitGDTAndTSS(Arch::x86_64::KernelStackTop);
+    Arch::x86_64::InitIDT();
 
     Arch::x86_64::APIC::DisableLegacyPIC();
 
     ParseMemoryInfo(info->MemInfo);
-    Kernel::Early::EarlyPageAllocator* allocator = new(earlyPageAllocatorBuffer) Kernel::Early::EarlyPageAllocator();
+    Early::EarlyPageAllocator* allocator = new(earlyPageAllocatorBuffer) Kernel::Early::EarlyPageAllocator();
     Early::InitOperatorNew(*allocator);
-    bool ok = BuildIdentityMap2M(info->MemInfo, cr3, *allocator);
+    bool ok = Kernel::Arch::x86_64::BuildIdentityMap2M(info->MemInfo, cr3, *allocator);
     if (ok)
     {
-        LoadCR3(cr3);
+        Kernel::Arch::x86_64::LoadCR3(cr3);
     }
     else
     {
         PANIC(Status::STATUS_ERROR, 0);
     }
 
-    auto apicController = new(apicControllerBuffer) Arch::x86_64::APIC::APICController();
     Early::InitKernelConsole(info->FrameBufferInfo);
-    auto console = Early::GetKernelConsole();
+
+    constexpr std::uint8_t DIV_SHIFT = 3;
+    constexpr std::uint32_t TARGET_US = 10000;
+    auto apicController = new(apicControllerBuffer) Arch::x86_64::APIC::APICController();
+    Arch::x86_64::Interrupts::InitializeInterruptDispatch();
+    Arch::x86_64::Interrupts::InitCoreExceptionHandlers();
+    Arch::x86_64::Interrupts::InitTimerHandler();
+    const auto initial = Arch::x86_64::APIC::CalibrateTimerInitialCountTSC(info->ClockInfo->TSCFreq, DIV_SHIFT, TARGET_US, 200);
+    Arch::x86_64::APIC::ConfigureTimer(Arch::x86_64::Interrupts::VEC_TIMER, DIV_SHIFT, initial, true);
 
     SetHardwareTimerInfo(info->ClockInfo);
     auto acpiManager = new(acpiManagerBuffer) Kernel::ACPIManager(info->RSDP);
 
     Arch::x86_64::EndCriticalSection();
 
+    Arch::x86_64::EnableInterrupt();
+
+    auto console = Early::GetKernelConsole();
     console->PutString("Finished kernel initialization.\n");
 
     while (true);

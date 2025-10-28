@@ -2,7 +2,7 @@
 
 #include "BaseType.hpp"
 
-namespace Kernel::Boot::x86_64
+namespace Kernel::Arch::x86_64
 {
     struct TSS
     {

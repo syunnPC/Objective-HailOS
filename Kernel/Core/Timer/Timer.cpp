@@ -38,7 +38,7 @@ namespace Kernel
         //現時点ではこれ以外存在しないはず
         if (m_Type == TimerType::TSC_TIMER)
         {
-            return Arch::x86_64::GetTSC();
+            return Arch::x86_64::ReadTSC();
         }
 
         //Unreachableだが返す
@@ -49,10 +49,10 @@ namespace Kernel
     {
         if (m_Type == TimerType::TSC_TIMER)
         {
-            auto begin = Arch::x86_64::GetTSC();
+            auto begin = Arch::x86_64::ReadTSC();
             double sleepSec = value / static_cast<std::int64_t>(timeScale);
             std::uint64_t waitClock = static_cast<std::uint64_t>(m_Freq * sleepSec);
-            while (Arch::x86_64::GetTSC() < begin + waitClock);
+            while (Arch::x86_64::ReadTSC() < begin + waitClock);
             return;
         }
     }
@@ -71,7 +71,7 @@ namespace Kernel
     {
         if (m_Type == TimerType::TSC_TIMER)
         {
-            m_LastStamp = Arch::x86_64::GetTSC();
+            m_LastStamp = Arch::x86_64::ReadTSC();
             return;
         }
     }
@@ -80,7 +80,7 @@ namespace Kernel
     {
         if (m_Type == TimerType::TSC_TIMER)
         {
-            m_LastStamp = Arch::x86_64::GetTSC();
+            m_LastStamp = Arch::x86_64::ReadTSC();
             return;
         }
     }
@@ -94,7 +94,7 @@ namespace Kernel
     {
         if (m_Type == TimerType::TSC_TIMER)
         {
-            auto delta = Arch::x86_64::GetTSC() - m_LastStamp;
+            auto delta = Arch::x86_64::ReadTSC() - m_LastStamp;
             double elapsed = delta / m_Freq;
             return static_cast<std::uint64_t>(elapsed * static_cast<std::uint64_t>(timeScale));
         }
@@ -107,7 +107,7 @@ namespace Kernel
     {
         if (m_Type == TimerType::TSC_TIMER)
         {
-            auto delta = Arch::x86_64::GetTSC() - m_LastStamp;
+            auto delta = Arch::x86_64::ReadTSC() - m_LastStamp;
             double elapsed = delta / m_Freq;
             return static_cast<std::uint64_t>(elapsed * static_cast<std::uint64_t>(timeScale));
         }

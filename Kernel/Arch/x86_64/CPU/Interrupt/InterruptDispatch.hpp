@@ -1,7 +1,6 @@
 #pragma once
 
 #include "BaseType.hpp"
-#include "InterruptFrame.hpp"
 
 namespace Kernel::Arch::x86_64::Interrupts
 {

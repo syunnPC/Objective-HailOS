@@ -1,6 +1,7 @@
 #include "APICController.hpp"
 #include "APICInit.hpp"
 #include "LAPIC.hpp"
+#include "InterruptDispatch.hpp"
 
 namespace Kernel::Arch::x86_64::APIC
 {
@@ -12,6 +13,8 @@ namespace Kernel::Arch::x86_64::APIC
             InitializeAPIC();
             isInitialized = true;
         }
+
+        Interrupts::SetEOIEmitter(&EndOfInterrupt);
     }
 
     void APICController::Enable(int vector) noexcept
@@ -26,6 +29,7 @@ namespace Kernel::Arch::x86_64::APIC
 
     void APICController::EOI(int vector) noexcept
     {
+        (void)vector;
         EndOfInterrupt();
     }
 }

@@ -4,7 +4,7 @@
 
 namespace Kernel::Arch::x86_64
 {
-    inline std::uint64_t GetTSC()
+    inline std::uint64_t ReadTSC()
     {
         std::uint32_t lo;
         std::uint32_t hi;

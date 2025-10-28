@@ -3,7 +3,7 @@
 #include "MemoryUtility.hpp"
 #include "InterruptDispatch.hpp"
 
-namespace Kernel::Boot::x86_64
+namespace Kernel::Arch::x86_64
 {
     alignas(4096) std::uint8_t gGDT[7 * sizeof(GDTEntry)];
     alignas(4096) GDTR gGDTPtr;

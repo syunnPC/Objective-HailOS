@@ -4,15 +4,23 @@
 
 namespace Kernel::Early
 {
+    /// @brief メモリ上からpageCount * PAGE_SIZE [bytes]分の連続したメモリを確保して先頭のアドレスを返す
+    /// @param pageCount 確保するページ数
+    /// @return メモリが存在しなければnullptr
     static inline void* FindAvailableAddress(std::size_t pageCount) noexcept
     {
-        const std::size_t total = MAX_PHYS_PAGE_BITMAP_INDEX * CHAR_BIT;
+        if (pageCount == 0)
+        {
+            return nullptr;
+        }
+
+        const std::size_t total = (MAX_PHYS_PAGE_BITMAP_INDEX + 1) * CHAR_BIT;
         if (total < pageCount)
         {
             return nullptr;
         }
 
-        int run = 0;
+        std::size_t run = 0;
         for (std::size_t i = 0; i < total; ++i)
         {
             const std::size_t idx = i / CHAR_BIT;
@@ -26,7 +34,7 @@ namespace Kernel::Early
                     const std::size_t start = i - (pageCount - 1);
                     const std::size_t sidx = start / CHAR_BIT;
                     const int sbit = static_cast<int>(start % CHAR_BIT);
-                    return reinterpret_cast<void*>(BITMAP_INDEX_BIT_TO_PAGE_ADDRESS(idx, b));
+                    return reinterpret_cast<void*>(BITMAP_INDEX_BIT_TO_PAGE_ADDRESS(sidx, sbit));
                 }
             }
             else
@@ -34,7 +42,6 @@ namespace Kernel::Early
                 run = 0;
             }
         }
-
         return nullptr;
     }
 

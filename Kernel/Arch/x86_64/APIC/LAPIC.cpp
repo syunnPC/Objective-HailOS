@@ -73,6 +73,11 @@ namespace
 
 namespace Kernel::Arch::x86_64::APIC
 {
+    volatile std::uint32_t* GetLAPICMMIOBase() noexcept
+    {
+        return gLAPICMMIO;
+    }
+
     bool IsPresent() noexcept
     {
         std::uint32_t a, b, c, d;

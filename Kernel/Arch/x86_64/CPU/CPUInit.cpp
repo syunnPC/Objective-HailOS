@@ -1,4 +1,4 @@
-#include "CPU_Init.hpp"
+#include "CPUInit.hpp"
 #include "TSS.hpp"
 #include "MemoryUtility.hpp"
 #include "InterruptDispatch.hpp"

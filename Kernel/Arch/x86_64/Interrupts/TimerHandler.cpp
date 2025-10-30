@@ -15,13 +15,15 @@ namespace
                 con->PutString("[LAPIC Timer Tick]\n");
             }
         }
+
+        Kernel::Arch::x86_64::APIC::EndOfInterrupt();
     }
 }
 
 namespace Kernel::Arch::x86_64::Interrupts
 {
-    void InitTimerHandler() noexcept
+    void InitTimerHandler(std::uint8_t vec) noexcept
     {
-        RegisterInterruptHandler(VEC_TIMER, &OnTimer);
+        RegisterInterruptHandler(vec, &OnTimer);
     }
 }

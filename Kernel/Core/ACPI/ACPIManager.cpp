@@ -4,19 +4,13 @@
 #include "RefPtr.hpp"
 #include "Timer.hpp"
 #include "Panic.hpp"
+#include "Halt.hpp"
 
-namespace Kernel
+namespace
 {
-    constexpr auto ACPI_SIG_RSDP = "RSD PTR ";
-    constexpr auto ACPI_SIG_XSDT = "XSDT";
-    constexpr auto ACPI_SIG_RSDT = "RSDT";
-    constexpr auto ACPI_SIG_FACP = "FACP";
+    using namespace Kernel::ACPI;
 
-    constexpr std::uint16_t SLP_TYPE_S5 = (0x5 << 10);
-    constexpr std::uint16_t SLP_EN = (1 << 13);
-    constexpr std::uint16_t SLP_CMD = SLP_TYPE_S5 | SLP_EN;
-
-    static inline bool CheckSigEq(const char* sig1, const char* sig2, std::size_t length)
+    inline bool CheckSigEq(const char* sig1, const char* sig2, std::size_t length) noexcept
     {
         for (std::size_t i = 0; i < length; ++i)
         {
@@ -30,7 +24,7 @@ namespace Kernel
     }
 
     template<typename T>
-    static inline void WritePhysMem(void* addr, T value)
+    inline void WritePhysMem(void* addr, T value) noexcept
     {
         if (addr == 0)
         {
@@ -41,7 +35,7 @@ namespace Kernel
         *ptr = value;
     }
 
-    static bool ValidateRSDPChecksum(RSDPtr* rsdp)
+    bool ValidateRSDPChecksum(RSDPtr* rsdp) noexcept
     {
         if (rsdp == nullptr)
         {
@@ -79,7 +73,7 @@ namespace Kernel
         }
     }
 
-    static SDTHeader* FindTable(RSDPtr* rsdp, const char* sig)
+    SDTHeader* FindTable(RSDPtr* rsdp, const char* sig) noexcept
     {
         if (rsdp == nullptr || sig == nullptr)
         {
@@ -127,6 +121,18 @@ namespace Kernel
 
         return nullptr;
     }
+}
+
+namespace Kernel::ACPI
+{
+    constexpr auto ACPI_SIG_RSDP = "RSD PTR ";
+    constexpr auto ACPI_SIG_XSDT = "XSDT";
+    constexpr auto ACPI_SIG_RSDT = "RSDT";
+    constexpr auto ACPI_SIG_FACP = "FACP";
+
+    constexpr std::uint16_t SLP_TYPE_S5 = (0x5 << 10);
+    constexpr std::uint16_t SLP_EN = (1 << 13);
+    constexpr std::uint16_t SLP_CMD = SLP_TYPE_S5 | SLP_EN;
 
     ACPIManager::ACPIManager(RSDPtr* ptr) noexcept : m_RSDPtr(ptr)
     {
@@ -139,7 +145,7 @@ namespace Kernel
         }
     }
 
-    void ACPIManager::Shutdown() noexcept
+    [[noreturn]] void ACPIManager::Shutdown() noexcept
     {
         if (m_RSDPtr == nullptr)
         {
@@ -222,5 +228,6 @@ namespace Kernel
         RefPtr<Timer> t;
         t->Sleep(10, TimeScale::SECONDS);
         asm volatile("int3");
+        Arch::x86_64::HaltProcessor();
     }
 }

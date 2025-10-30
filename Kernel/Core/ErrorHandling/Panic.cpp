@@ -5,7 +5,7 @@
 
 namespace Kernel
 {
-    void PanicEx(Status status, std::uint64_t param1, std::uint64_t param2, std::uint64_t param3, std::uint64_t param4, const char* fileName = nullptr, const char* func = nullptr, int line = -1)
+    [[noreturn]] void PanicEx(Status status, std::uint64_t param1, std::uint64_t param2, std::uint64_t param3, std::uint64_t param4, const char* fileName = nullptr, const char* func = nullptr, int line = -1)
     {
         Kernel::Arch::x86_64::StartCriticalSection();
 
@@ -28,7 +28,7 @@ namespace Kernel
         if (line >= 0)
         {
             con->PutString("\nLine:");
-            con->PutString(fileName);
+            con->PutString(Library::String::ULongToHexString(line));
         }
 
         if (func != nullptr)

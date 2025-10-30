@@ -2,7 +2,7 @@
 
 namespace Kernel::Arch::x86_64
 {
-    inline void HaltProcessor() noexcept
+    [[noreturn]] inline void HaltProcessor() noexcept
     {
         while (true)
         {

@@ -35,7 +35,7 @@ namespace Kernel::Early
     public:
         KernelConsole() noexcept = delete;
         KernelConsole(const KernelConsole&) noexcept = delete;
-        KernelConsole(KernelConsole&&) noexcept = default;
+        KernelConsole(KernelConsole&&) noexcept = delete;
         KernelConsole(GraphicInfo* info) noexcept;
 
         virtual void PutChar(char ch) noexcept override;
@@ -63,8 +63,8 @@ namespace Kernel::Early
             std::uint32_t Y;
         };
 
-        const FrameBufferColor COLOR_BLACK{ 0, 0, 0, 0 };
-        const FrameBufferColor COLOR_WHITE{ 255, 255, 255, 0 };
+        const FrameBufferColor COLOR_BACKGROUND{ 0, 0, 0, 0 };
+        const FrameBufferColor COLOR_FOREGROUND{ 255, 255, 255, 0 };
 
         const GraphicInfo* m_Info;
         Point m_CursorPosition;

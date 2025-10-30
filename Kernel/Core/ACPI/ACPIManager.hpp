@@ -3,7 +3,7 @@
 #include "IPowerManager.hpp"
 #include "RefCountedBase.hpp"
 
-namespace Kernel
+namespace Kernel::ACPI
 {
     struct SDTHeader
     {
@@ -103,7 +103,7 @@ namespace Kernel
         ACPIManager(const ACPIManager&) = delete;
         ACPIManager(ACPIManager&&) noexcept = default;
         ACPIManager(RSDPtr* ptr) noexcept;
-        virtual void Shutdown() noexcept override;
+        [[noreturn]] virtual void Shutdown() noexcept override;
     protected:
         virtual ~ACPIManager() noexcept override = default;
     private:

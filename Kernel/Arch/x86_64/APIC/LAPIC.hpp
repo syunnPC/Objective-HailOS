@@ -11,6 +11,7 @@ namespace Kernel::Arch::x86_64::APIC
     std::uint32_t ReadLAPICID() noexcept;
     std::uint32_t ReadLAPICVersion() noexcept;
     void DisableLegacyPIC() noexcept;
+    volatile std::uint32_t* GetLAPICMMIOBase() noexcept;
 
     //LAPICタイマ
     void ConfigureTimer(std::uint8_t vector, std::uint8_t divideShift, std::uint32_t initialCount, bool periodic) noexcept;

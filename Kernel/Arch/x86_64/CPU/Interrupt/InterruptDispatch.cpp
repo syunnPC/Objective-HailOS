@@ -1,4 +1,5 @@
 #include "InterruptDispatch.hpp"
+#include "PIC.hpp"
 
 namespace Kernel::Arch::x86_64::Interrupts
 {
@@ -114,6 +115,19 @@ namespace Kernel::Arch::x86_64::Interrupts
 
         if (NeedsEOI(vec))
         {
+            if (vec == VEC_PIT_IRQ)
+            {
+                PIC::EOIMaster();
+            }
+            else if (PIC::IsSlaveVector(vec))
+            {
+                PIC::EOISlave();
+            }
+            else if (PIC::IsMasterVector(vec))
+            {
+                PIC::EOIMaster();
+            }
+
             EmitEOI(vec);
         }
     }

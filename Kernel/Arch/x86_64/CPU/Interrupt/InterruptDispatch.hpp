@@ -5,6 +5,7 @@
 namespace Kernel::Arch::x86_64::Interrupts
 {
     constexpr std::uint8_t IRQ_BASE = 0x20;
+    constexpr std::uint8_t VEC_PIT_IRQ = 0x62;
     constexpr std::uint8_t VEC_TIMER = 0x60;
     constexpr std::uint8_t VEC_ERROR = 0x61;
     constexpr std::uint8_t VEC_SPURIOUS = 0xFF;

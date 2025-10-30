@@ -7,8 +7,6 @@ namespace
     {
         return ch > 0x19 && ch < 0x7f ? true : false;
     }
-
-    Kernel::Early::KernelConsole* gKConsole;
 }
 
 namespace Kernel::Early
@@ -87,11 +85,11 @@ namespace Kernel::Early
                 {
                     if (line & (1 << (7 - k)))
                     {
-                        DrawPixel(Point{ m_CursorPosition.X + k, m_CursorPosition.Y + i }, COLOR_WHITE);
+                        DrawPixel(Point{ m_CursorPosition.X + k, m_CursorPosition.Y + i }, COLOR_FOREGROUND);
                     }
                     else
                     {
-                        DrawPixel(Point{ m_CursorPosition.X + k, m_CursorPosition.Y + i }, COLOR_BLACK);
+                        DrawPixel(Point{ m_CursorPosition.X + k, m_CursorPosition.Y + i }, COLOR_BACKGROUND);
                     }
                 }
             }
@@ -102,7 +100,7 @@ namespace Kernel::Early
         {
             switch (ch)
             {
-            case 'n':
+            case '\n':
                 m_CursorPosition.Y += FONT_HEIGHT;
                 m_CursorPosition.X = 0;
                 if (IsEndOfScreen())

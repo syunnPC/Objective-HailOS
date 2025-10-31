@@ -15,9 +15,9 @@ namespace Kernel::Arch::x86_64
 {
     void SetPerCPUBase(PerCPU* base) noexcept
     {
-        MSR::Write(MSR::IA32_GS_BASE, reinterpret_cast<std::uint64_t>(base));
-        MSR::Write(MSR::IA32_KERNEL_GS_BASE, reinterpret_cast<std::uint64_t>(base));
-        WriteGS0(base);
+        const auto addr = reinterpret_cast<std::uintptr_t>(base);
+        MSR::Write(MSR::IA32_GS_BASE, addr);
+        MSR::Write(MSR::IA32_KERNEL_GS_BASE, addr);
     }
 
     void InitPerCPU() noexcept

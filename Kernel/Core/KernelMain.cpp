@@ -20,6 +20,7 @@
 #include "RedundantOutput.hpp"
 #include "SerialConsole.hpp"
 #include "PerCPU.hpp"
+#include "Scheduler.hpp"
 
 #include "APICInit.hpp"
 
@@ -74,11 +75,46 @@ namespace
     inline void InitPerCPUAndTime(BootInfo* info)
     {
         constexpr std::uint8_t DIV_SHIFT = 3;
-        constexpr std::uint32_t TARGET_US = 10000;
+        constexpr std::uint32_t TARGET_US = 1000;
         Kernel::Arch::x86_64::InitPerCPU();
         const auto initial = Kernel::Arch::x86_64::APIC::CalibrateTimerInitialCountTSC(info->ClockInfo->TSCFreq, DIV_SHIFT, TARGET_US, 200);
         Kernel::Arch::x86_64::Interrupts::InitTimerHandler(Kernel::Arch::x86_64::Interrupts::VEC_TIMER);
         Kernel::Arch::x86_64::APIC::ConfigureTimer(Kernel::Arch::x86_64::Interrupts::VEC_TIMER, DIV_SHIFT, initial, true);
+    }
+
+    void WorkerA(void*)
+    {
+        static volatile std::size_t ctr = 0;
+        while (true)
+        {
+            auto con = Kernel::Early::GetBootstrapConsole();
+            con->PutString("Hello, Scheduled tasks! This message must be shown once per a second!\n");
+            Kernel::Sched::SleepMs(1000);
+        }
+    }
+
+    void WorkerB(void*)
+    {
+        auto con = Kernel::Early::GetBootstrapConsole();
+        volatile std::uint64_t next = Kernel::Arch::x86_64::CPU().TickCount + 4000;
+        while (true)
+        {
+            if (Kernel::Arch::x86_64::CPU().TickCount >= next)
+            {
+                con->PutString("Greetings from Worker B!\n");
+                next += 4000;
+            }
+
+            Kernel::Sched::Yield();
+        }
+    }
+
+    void KernelStartThreads()
+    {
+        Kernel::Sched::Init();
+        Kernel::Sched::CreateAndEnqueue("WorkerA", &WorkerA, nullptr);
+        Kernel::Sched::CreateAndEnqueue("WorkerB", &WorkerB, nullptr);
+        Kernel::Sched::Start();
     }
 }
 
@@ -127,12 +163,14 @@ extern "C" void main(BootInfo* info)
     out->PutString(Library::String::ULongToHexString(Arch::x86_64::CPU().LAPICID));
     out->PutChar('\n');
 
-    Arch::x86_64::EndCriticalSection();
-
     SetHardwareTimerInfo(info->ClockInfo);
     auto acpiManager = new(acpiManagerBuffer) Kernel::ACPI::ACPIManager(info->RSDP);
 
     out->PutString("Finished kernel initialization.\n");
+
+    Arch::x86_64::EndCriticalSection();
+
+    KernelStartThreads();
 
     while (true);
 }

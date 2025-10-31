@@ -2,23 +2,10 @@
 #include "LAPIC.hpp"
 #include "TSC.hpp"
 #include "InterruptDispatch.hpp"
+#include "MSR.hpp"
 
 namespace
 {
-    static inline void WriteMSR(std::uint32_t msr, std::uint64_t value)
-    {
-        std::uint32_t lo = static_cast<std::uint32_t>(value & 0xFFFFFFFFull);
-        std::uint32_t hi = static_cast<std::uint32_t>(value >> 32);
-        asm volatile("wrmsr" : : "c"(msr), "a"(lo), "d"(hi) : );
-    }
-
-    static inline std::uint64_t ReadMSR(std::uint32_t msr)
-    {
-        std::uint32_t lo, hi;
-        asm volatile("rdmsr" : "=a"(lo), "=d"(hi) : "c"(msr) : );
-        return ((static_cast<std::uint64_t>(hi) << 32) | lo);
-    }
-
     constexpr std::uint32_t MSR_IA32_APIC_BASE = 0x1B;
     constexpr std::uint64_t APIC_BASE_BSP = 1ull << 8;
     constexpr std::uint64_t APIC_BASE_EXTD = 1ull << 10;
@@ -87,17 +74,17 @@ namespace Kernel::Arch::x86_64::APIC
 
     void Enable() noexcept
     {
-        auto apicBase = ReadMSR(MSR_IA32_APIC_BASE);
+        auto apicBase = MSR::Read(MSR_IA32_APIC_BASE);
         apicBase |= APIC_BASE_EN;
         apicBase &= ~APIC_BASE_EXTD;
 
-        WriteMSR(MSR_IA32_APIC_BASE, apicBase);
+        MSR::Write(MSR_IA32_APIC_BASE, apicBase);
 
         std::uintptr_t base = static_cast<std::uintptr_t>(apicBase & APIC_BASE_ADDR_MASK);
         gLAPICMMIO = reinterpret_cast<volatile std::uint32_t*>(base);
     }
 
-    void InitializeEarly(std::uint8_t spuriousVector, std::uint8_t errorVector) noexcept
+    void InitEarly(std::uint8_t spuriousVector, std::uint8_t errorVector) noexcept
     {
         if (!gLAPICMMIO)
         {

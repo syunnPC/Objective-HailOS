@@ -10,7 +10,7 @@ namespace Kernel::Arch::x86_64::APIC
         static bool isInitialized = false;
         if (!isInitialized)
         {
-            InitializeAPIC();
+            InitAPIC();
             isInitialized = true;
         }
 

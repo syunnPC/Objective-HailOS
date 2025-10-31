@@ -41,7 +41,7 @@ namespace Kernel::Arch::x86_64::Interrupts
     std::uint64_t GetVectorCount(std::uint8_t vector) noexcept;
     void ResetVectorCounts() noexcept;
 
-    void InitializeInterruptDispatch() noexcept;
+    void InitInterruptDispatch() noexcept;
 }
 
 #define DECL_HANDLER(n) __attribute__((interrupt)) void Handler##n(Kernel::Arch::x86_64::Interrupts::InterruptFrame*) noexcept

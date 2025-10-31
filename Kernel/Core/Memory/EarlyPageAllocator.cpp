@@ -2,6 +2,14 @@
 #include "PhysicalMemoryBitmap.hpp"
 #include "Bit.hpp"
 
+#define ALLOC_STATIC_BUFFER_FOR_PLACEMENT_NEW(type, bufferName) alignas(type) static std::uint8_t bufferName[sizeof(type)]
+
+namespace
+{
+    ALLOC_STATIC_BUFFER_FOR_PLACEMENT_NEW(Kernel::Early::EarlyPageAllocator, earlyPageAllocatorBuffer);
+    static Kernel::Early::EarlyPageAllocator* gEarlyPageAllocatorPtr;
+}
+
 namespace Kernel::Early
 {
     /// @brief メモリ上からpageCount * PAGE_SIZE [bytes]分の連続したメモリを確保して先頭のアドレスを返す
@@ -112,5 +120,22 @@ namespace Kernel::Early
         }
 
         return total;
+    }
+
+    void InitEarlyPageAllocator(MemoryInfo* info) noexcept
+    {
+        static bool isInitialized = false;
+        if (!isInitialized)
+        {
+            ParseMemoryInfo(info);
+            gEarlyPageAllocatorPtr = new(earlyPageAllocatorBuffer) EarlyPageAllocator();
+        }
+
+        isInitialized = true;
+    }
+
+    IPageAllocator* GetEarlyPageAllocator() noexcept
+    {
+        return static_cast<IPageAllocator*>(gEarlyPageAllocatorPtr);
     }
 }

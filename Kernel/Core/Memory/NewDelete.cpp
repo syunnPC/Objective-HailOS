@@ -7,9 +7,9 @@
 
 namespace Kernel::Early
 {
-    static EarlyPageAllocator* gEarlyAlloc = nullptr;
+    static IPageAllocator* gEarlyAlloc = nullptr;
 
-    void InitOperatorNew(EarlyPageAllocator& alloc) noexcept
+    void InitOperatorNew(IPageAllocator& alloc) noexcept
     {
         gEarlyAlloc = &alloc;
     }

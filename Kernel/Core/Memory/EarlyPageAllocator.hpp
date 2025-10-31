@@ -3,6 +3,10 @@
 #include "BaseType.hpp"
 #include "RefCountedBase.hpp"
 #include "IPageAllocator.hpp"
+#include "RefPtr.hpp"
+#include "PhysicalMemoryBitmap.hpp"
+
+#include <new>
 
 namespace Kernel::Early
 {
@@ -25,4 +29,8 @@ namespace Kernel::Early
     protected:
         virtual ~EarlyPageAllocator() override = default;
     };
+
+    void InitEarlyPageAllocator(MemoryInfo* info) noexcept;
+
+    IPageAllocator* GetEarlyPageAllocator() noexcept;
 }

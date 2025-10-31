@@ -1,5 +1,6 @@
 #include "InterruptDispatch.hpp"
 #include "PIC.hpp"
+#include "MSR.hpp"
 
 namespace Kernel::Arch::x86_64::Interrupts
 {
@@ -27,9 +28,7 @@ namespace Kernel::Arch::x86_64::Interrupts
     static void DefaultEOI() noexcept
     {
         constexpr std::uint32_t IA32_APIC_BASE_MSR = 0x1B;
-        std::uint32_t lo, hi;
-        asm volatile("rdmsr" : "=a"(lo), "=d"(hi) : "c"(IA32_APIC_BASE_MSR) : );
-        auto msr = ((static_cast<std::uint64_t>(hi) << 32) | lo);
+        auto msr = MSR::Read(IA32_APIC_BASE_MSR);
         std::uintptr_t base = static_cast<std::uintptr_t>(msr & 0xFFFFF000ULL);
         volatile std::uint32_t* eoi = reinterpret_cast<volatile std::uint32_t*>(base + 0xB0);
         *eoi = 0u;
@@ -41,7 +40,7 @@ namespace Kernel::Arch::x86_64::Interrupts
         (gEOI ? gEOI : DefaultEOI) ();
     }
 
-    void InitializeInterruptDispatch() noexcept
+    void InitInterruptDispatch() noexcept
     {
         for (std::size_t i = 0; i < 256; ++i)
         {

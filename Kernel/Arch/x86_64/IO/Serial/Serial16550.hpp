@@ -10,6 +10,7 @@ namespace Kernel::Arch::x86_64::IO::Serial
     private:
         std::uint64_t m_Base;
         Sync::TicketSpinLock m_SpinLock;
+        bool m_IsReady{ false };
     private:
         inline static bool Probe(std::uint16_t base) noexcept
         {
@@ -54,7 +55,7 @@ namespace Kernel::Arch::x86_64::IO::Serial
         explicit Serial16550(std::uint32_t baud) noexcept
         {
             static constexpr std::uint16_t baseCand[] = { 0x3F8, 0x2F8, 0x3E8, 0x2E8 };
-            std::uint16_t base;
+            std::uint16_t base = 0;
             for (auto b : baseCand)
             {
                 if (Probe(b))
@@ -63,6 +64,13 @@ namespace Kernel::Arch::x86_64::IO::Serial
                     base = b;
                 }
             }
+
+            if (base == 0)
+            {
+                return;
+            }
+
+            m_IsReady = true;
 
             Out8(base + 1, 0x00);
 
@@ -82,17 +90,32 @@ namespace Kernel::Arch::x86_64::IO::Serial
 
         inline bool CanTx() const noexcept
         {
+            if (!m_IsReady)
+            {
+                return false;
+            }
+
             return (In8(m_Base + 5) & 0x20) != 0;
         }
 
         inline void WriteByte(std::uint8_t v) noexcept
         {
+            if (!m_IsReady)
+            {
+                return;
+            }
+
             while (!CanTx()) Sync::CPURelax();
             IO::Out8(m_Base, v);
         }
 
         inline void Write(const char* s) noexcept
         {
+            if (!m_IsReady)
+            {
+                return;
+            }
+
             auto guard = Sync::LockIRQSave(m_SpinLock);
             for (auto p = s; *p != '\0'; ++p)
             {
@@ -102,11 +125,16 @@ namespace Kernel::Arch::x86_64::IO::Serial
                 }
                 WriteByte(*p);
             }
-            Sync::UnlockIRQRestor(guard);
+            Sync::UnlockIRQRestore(guard);
         }
 
         inline void Flush() noexcept
         {
+            if (!m_IsReady)
+            {
+                return;
+            }
+
             while (!CanTx())
             {
                 Sync::CPURelax();

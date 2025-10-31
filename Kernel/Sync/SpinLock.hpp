@@ -84,7 +84,7 @@ namespace Kernel::Sync
         return LockedWithIRQ(&l, st);
     }
 
-    inline void UnlockIRQRestor(LockedWithIRQ ctx) noexcept
+    inline void UnlockIRQRestore(LockedWithIRQ ctx) noexcept
     {
         Unlock(*ctx.LockPtr);
         IRQRestore(ctx.State);

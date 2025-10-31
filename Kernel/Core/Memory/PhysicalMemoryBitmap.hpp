@@ -3,6 +3,11 @@
 #include "BaseType.hpp"
 #include "MemoryInfo.hpp"
 
+/*
+    TODO:
+    これらの関数をconstexpr inlineにする
+*/
+
 //nページ目を示す
 #define ADDRESS_TO_PAGE_INDEX(addr) (static_cast<std::uintptr_t>(addr) / Kernel::PAGE_SIZE)
 

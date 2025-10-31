@@ -8,7 +8,7 @@ BUILD_DIR = Build
 OBJ_DIR   = $(BUILD_DIR)/obj
 KERNEL_ELF= $(BUILD_DIR)/kernel.elf
 
-CXXFLAGS_COMMON = -g -ffreestanding -Wall -Wextra -mno-red-zone -mcmodel=kernel -fno-pie -fno-stack-protector -O0 -std=c++23 -fno-exceptions -fno-rtti
+CXXFLAGS_COMMON = -g -ffreestanding -Wall -Wextra -mno-red-zone -mcmodel=kernel -fno-pie -fno-stack-protector -O0 -std=c++23 -fno-exceptions -fno-rtti -U_GLIBCXX_ASSERTIONS
 CXXFLAGS          = $(CXXFLAGS_COMMON)
 CXXFLAGS_INTERRUPT= $(CXXFLAGS_COMMON) -mgeneral-regs-only
 CFLAGS            = -g -ffreestanding -Wall -Wextra -mno-red-zone -mcmodel=kernel -fno-pie -fno-stack-protector -O0 -std=c11

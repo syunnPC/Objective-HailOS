@@ -56,6 +56,7 @@ namespace Kernel
         HW_RANDOM_ENGINE = MakeDeviceType(DeviceTypeMajor::SECURITY, 0x0001),
 
         CONSOLE = MakeDeviceType(DeviceTypeMajor::OUTPUT, 0x0000),
+        SERIAL = MakeDeviceType(DeviceTypeMajor::OUTPUT, 0x0001),
     };
 
     inline constexpr InterfaceID IID_IDevice{ {

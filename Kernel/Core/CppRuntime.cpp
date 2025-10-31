@@ -30,4 +30,13 @@ extern "C"
     void __cxa_finalize(void*) {}
 
     void* __dso_handle = (void*)&__dso_handle;
+
+    namespace std
+    {
+        [[gnu::noreturn]] void __glibcxx_assert_fail(const char* file, int line, const char* func, const char* expr) noexcept
+        {
+            asm volatile("cli; hlt");
+            __builtin_unreachable();
+        }
+    }
 }

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <atomic>
-
 #include "IKernelObject.hpp"
 #include "NewDelete.hpp"
 
@@ -10,17 +8,18 @@ namespace Kernel
     class RefCountedBase : public virtual IKernelObject
     {
     private:
-        std::atomic_size_t m_RefCount{ 1 };
+        std::size_t m_RefCount{ 1 };
     public:
         std::size_t AddRef() noexcept override
         {
-            return m_RefCount.fetch_add(1, std::memory_order_relaxed) + 1;
+            return __atomic_fetch_add(&m_RefCount, 1u, __ATOMIC_RELAXED) + 1u;
         }
 
         void Release() noexcept override
         {
-            if (m_RefCount.fetch_sub(1, std::memory_order_acq_rel) == 1)
+            if (__atomic_fetch_sub(&m_RefCount, 1u, __ATOMIC_ACQ_REL) == 1u)
             {
+                __atomic_thread_fence(__ATOMIC_ACQUIRE);
                 delete this;
             }
         }

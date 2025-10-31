@@ -10,7 +10,7 @@ namespace
         ++tick;
         if ((tick & 1023ull) == 0)
         {
-            if (auto con = Kernel::Early::GetKernelConsole())
+            if (auto con = Kernel::Early::GetBootstrapConsole())
             {
                 con->PutString("[LAPIC Timer Tick]\n");
             }

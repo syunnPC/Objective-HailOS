@@ -11,7 +11,7 @@ namespace
         ++ctr;
         if ((ctr & 1023ull) == 0)
         {
-            if (auto con = Kernel::Early::GetKernelConsole())
+            if (auto con = Kernel::Early::GetBootstrapConsole())
             {
                 con->PutString("[IOAPIC-IRQ0]\n");
             }

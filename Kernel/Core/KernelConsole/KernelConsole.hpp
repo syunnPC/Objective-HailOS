@@ -3,6 +3,8 @@
 #include "IOutputDevice.hpp"
 #include "RefCountedBase.hpp"
 #include "RefPtr.hpp"
+#include "SerialConsole.hpp"
+#include "RedundantOutput.hpp"
 
 namespace Kernel::Early
 {
@@ -94,5 +96,33 @@ namespace Kernel::Early
     {
         auto& owner = ConsoleOwner();
         return RefPtr<IOutputDevice>(static_cast<IOutputDevice*>(owner.Get()));
+    }
+
+    inline RefPtr<Devices::SerialConsole>& SerialOwner() noexcept
+    {
+        static RefPtr<Devices::SerialConsole> owner;
+        return owner;
+    }
+
+    inline void InitSerialConsole() noexcept
+    {
+        auto& owner = SerialOwner();
+        if (!owner)
+        {
+            owner = RefPtr<Devices::SerialConsole>(new Devices::SerialConsole());
+        }
+    }
+
+    inline RefPtr<IOutputDevice> GetSerialConsole() noexcept
+    {
+        auto& owner = SerialOwner();
+        return RefPtr<IOutputDevice>(static_cast<IOutputDevice*>(owner.Get()));
+    }
+
+    inline RefPtr<IOutputDevice> GetBootstrapConsole() noexcept
+    {
+        auto& s = SerialOwner();
+        auto& c = ConsoleOwner();
+        return RefPtr<IOutputDevice>(static_cast<IOutputDevice*>(new Devices::RedundantOutput(s.Get(), c.Get())));
     }
 }

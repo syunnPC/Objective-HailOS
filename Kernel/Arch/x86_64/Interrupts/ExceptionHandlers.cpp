@@ -9,7 +9,7 @@ namespace
 {
     void DumpException(const Kernel::Arch::x86_64::Interrupts::InterruptFrame& f, const char* name, bool hasError, std::uint64_t errorCode) noexcept
     {
-        auto con = Kernel::Early::GetKernelConsole();
+        auto con = Kernel::Early::GetBootstrapConsole();
         con->Reset();
         con->PutString("===== x86-64 Processor Exception =====\n");
         con->PutString(name);

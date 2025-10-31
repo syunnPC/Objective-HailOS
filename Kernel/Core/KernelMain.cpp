@@ -1,5 +1,5 @@
 #include "StringUtility.hpp"
-#include "IO.hpp"
+#include "PortIO.hpp"
 #include "CriticalSection.hpp"
 #include "MemoryInfo.hpp"
 #include "EarlyPageAllocator.hpp"
@@ -17,6 +17,8 @@
 #include "ExceptionHandlers.hpp"
 #include "Timer.hpp"
 #include "TimerHandler.hpp"
+#include "RedundantOutput.hpp"
+#include "SerialConsole.hpp"
 
 #include "APICInit.hpp"
 
@@ -88,7 +90,8 @@ extern "C" void main(BootInfo* info)
 
     //カーネルコンソールを初期化
     Early::InitKernelConsole(info->FrameBufferInfo);
-    auto console = Early::GetKernelConsole();
+    Early::InitSerialConsole();
+    auto out = Early::GetBootstrapConsole();
 
     //LAPICの初期化
     auto apicController = new(apicControllerBuffer) Arch::x86_64::APIC::APICController();
@@ -119,7 +122,7 @@ extern "C" void main(BootInfo* info)
     SetHardwareTimerInfo(info->ClockInfo);
     auto acpiManager = new(acpiManagerBuffer) Kernel::ACPI::ACPIManager(info->RSDP);
 
-    console->PutString("Finished kernel initialization.\n");
+    out->PutString("Finished kernel initialization.\n");
 
     while (true);
 }

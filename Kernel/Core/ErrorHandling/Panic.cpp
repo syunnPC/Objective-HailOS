@@ -9,7 +9,7 @@ namespace Kernel
     {
         Kernel::Arch::x86_64::StartCriticalSection();
 
-        auto con = Early::GetKernelConsole();
+        auto con = Early::GetBootstrapConsole();
         if (!con)
         {
             Arch::x86_64::HaltProcessor();

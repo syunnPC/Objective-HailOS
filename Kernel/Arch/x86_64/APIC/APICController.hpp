@@ -11,9 +11,9 @@ namespace Kernel::Arch::x86_64::APIC
         APICController() noexcept;
         APICController(const APICController&) = default;
         APICController(APICController&&) = default;
-        virtual void Enable(int vector) noexcept override;
-        virtual void Disable(int vector) noexcept override;
-        virtual void EOI(int vector) noexcept override;
+        virtual void Enable(std::uint8_t vector) noexcept override;
+        virtual void Disable(std::uint8_t vector) noexcept override;
+        virtual void EOI(std::uint8_t vector) noexcept override;
     protected:
         virtual ~APICController() noexcept = default;
     };

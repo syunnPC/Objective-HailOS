@@ -7,9 +7,9 @@ namespace Kernel
     class IInterruptController : public virtual IKernelObject
     {
     public:
-        virtual void Enable(int vector) noexcept = 0;
-        virtual void Disable(int vector) noexcept = 0;
-        virtual void EOI(int vector) noexcept = 0;
+        virtual void Enable(std::uint8_t vector) noexcept = 0;
+        virtual void Disable(std::uint8_t vector) noexcept = 0;
+        virtual void EOI(std::uint8_t vector) noexcept = 0;
     protected:
         virtual ~IInterruptController() noexcept = default;
     };

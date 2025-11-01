@@ -17,17 +17,25 @@ namespace Kernel::Arch::x86_64::APIC
         Interrupts::SetEOIEmitter(&EndOfInterrupt);
     }
 
-    void APICController::Enable(int vector) noexcept
+    void APICController::Enable(std::uint8_t vector) noexcept
     {
-
+        if (vector == Interrupts::VEC_TIMER)
+        {
+            MaskTimer(false);
+            return;
+        }
     }
 
-    void APICController::Disable(int vector) noexcept
+    void APICController::Disable(std::uint8_t vector) noexcept
     {
-
+        if (vector == Interrupts::VEC_TIMER)
+        {
+            MaskTimer(true);
+            return;
+        }
     }
 
-    void APICController::EOI(int vector) noexcept
+    void APICController::EOI(std::uint8_t vector) noexcept
     {
         (void)vector;
         EndOfInterrupt();

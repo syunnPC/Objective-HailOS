@@ -21,7 +21,7 @@
 #include "SerialConsole.hpp"
 #include "PerCPU.hpp"
 #include "Scheduler.hpp"
-
+#include "CPUID.hpp"
 #include "APICInit.hpp"
 
 #include <new>
@@ -167,6 +167,20 @@ extern "C" void main(BootInfo* info)
     auto acpiManager = new(acpiManagerBuffer) Kernel::ACPI::ACPIManager(info->RSDP);
 
     out->PutString("Finished kernel initialization.\n");
+
+    {
+        constexpr auto PROC_NAME_LEN = 48;
+        static char procName[PROC_NAME_LEN + 1];
+        auto regs = reinterpret_cast<std::uint32_t*>(procName);
+        Arch::x86_64::CPUID(0x80000002, 0, regs[0], regs[1], regs[2], regs[3]);
+        Arch::x86_64::CPUID(0x80000003, 0, regs[4], regs[5], regs[6], regs[7]);
+        Arch::x86_64::CPUID(0x80000004, 0, regs[8], regs[9], regs[10], regs[11]);
+        procName[PROC_NAME_LEN] = '\0';
+        out->PutString("Processor: ");
+        out->PutString(procName);
+    }
+
+    out->Flush();
 
     Arch::x86_64::EndCriticalSection();
 

@@ -2,6 +2,7 @@
 
 #include "IOutputDevice.hpp"
 #include "RefCountedBase.hpp"
+#include "Preempt.hpp"
 
 namespace Kernel::Devices
 {
@@ -14,6 +15,7 @@ namespace Kernel::Devices
         RedundantOutput(IOutputDevice* a, IOutputDevice* b) noexcept : m_A(a), m_B(b) {}
         inline virtual void PutChar(char ch) noexcept override
         {
+            Arch::x86_64::PreemptGuard pg;
             if (m_A)
             {
                 m_A->PutChar(ch);
@@ -27,6 +29,7 @@ namespace Kernel::Devices
 
         inline virtual void PutString(const char* s) noexcept override
         {
+            Arch::x86_64::PreemptGuard pg;
             if (m_A)
             {
                 m_A->PutString(s);
@@ -40,6 +43,7 @@ namespace Kernel::Devices
 
         inline virtual void Flush() noexcept override
         {
+            Arch::x86_64::PreemptGuard pg;
             if (m_A)
             {
                 m_A->Flush();
@@ -58,6 +62,7 @@ namespace Kernel::Devices
 
         inline virtual void Reset() noexcept override
         {
+            Arch::x86_64::PreemptGuard pg;
             if (m_A)
             {
                 m_A->Reset();
@@ -71,6 +76,7 @@ namespace Kernel::Devices
 
         inline virtual void Shutdown() noexcept override
         {
+            Arch::x86_64::PreemptGuard pg;
             if (m_A)
             {
                 m_A->Shutdown();

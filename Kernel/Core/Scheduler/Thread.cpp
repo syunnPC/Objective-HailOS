@@ -5,6 +5,7 @@
 #include "Scheduler.hpp"
 #include "Halt.hpp"
 #include "TSC.hpp"
+#include "Preempt.hpp"
 
 namespace
 {
@@ -15,21 +16,25 @@ namespace
         Kernel::Sched::Yield();
         Kernel::Arch::x86_64::HaltProcessor();
     }
-
-    static inline std::uint64_t NowTick() noexcept
-    {
-        return Kernel::Arch::x86_64::CPU().TickCount;
-    }
 }
 
 namespace Kernel::Sched
 {
+    std::uint64_t NowTick() noexcept
+    {
+        return Kernel::Arch::x86_64::CPU().TickCount;
+    }
+
     void SleepUntilTick(std::uint64_t targetTick) noexcept
     {
-        while (NowTick() < targetTick)
-        {
-            Kernel::Sched::Yield();
-        }
+        Arch::x86_64::PreemptGuard pg;
+
+        auto cur = Current();
+
+        cur->State = ThreadState::Sleep;
+        SleepInsert(cur, targetTick);
+
+        Kernel::Sched::Yield();
     }
 
     void SleepMs(std::uint64_t ms) noexcept
@@ -49,8 +54,10 @@ namespace Kernel::Sched
         {
             return nullptr;
         }
+        Arch::x86_64::FPUInitState(t->Ctx.FXState);
         t->PrepareInitialStack();
         t->State = ThreadState::Ready;
+
         return t;
     }
 
@@ -59,8 +66,8 @@ namespace Kernel::Sched
         std::uintptr_t sp = KStack.Top();
         auto push = [&](std::uint64_t v) { sp -= sizeof(v); *reinterpret_cast<std::uint64_t*>(sp) = v; };
 
-        push(0);
         push(reinterpret_cast<std::uint64_t>(&ThreadStartTrampoline));
+
         push(0);
         push(0);
         push(0);
@@ -73,9 +80,13 @@ namespace Kernel::Sched
 
     extern "C" void ThreadStartTrampoline() noexcept
     {
+        asm volatile("sti" ::: "memory");
+
         Thread* self = Current();
         self->State = ThreadState::Running;
         self->Entry(self->Arg);
         ThreadExit();
+
+        Arch::x86_64::HaltProcessor();
     }
 }

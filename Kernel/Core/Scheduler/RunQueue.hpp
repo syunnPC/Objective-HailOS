@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Thread.hpp"
+#include "Panic.hpp"
 
 namespace Kernel::Sched
 {
@@ -17,8 +18,13 @@ namespace Kernel::Sched
 
         void Push(Thread* t) noexcept
         {
+            if (!t)
+            {
+                PANIC(Status::STATUS_ERROR, 0);
+            }
             t->Next = nullptr;
             t->Prev = Tail;
+            t->InRunQueue = true;
             if (Tail != nullptr)
             {
                 Tail->Next = t;
@@ -49,6 +55,9 @@ namespace Kernel::Sched
             }
 
             t->Next = t->Prev = nullptr;
+
+            t->InRunQueue = false;
+
             return t;
         }
     };

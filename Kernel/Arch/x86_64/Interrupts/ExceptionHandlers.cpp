@@ -3,7 +3,7 @@
 #include "StringUtility.hpp"
 #include "Halt.hpp"
 #include "KernelConsole.hpp"
-#include "Paging.hpp"
+#include "ControlRegisters.hpp"
 
 namespace
 {
@@ -25,14 +25,14 @@ namespace
         con->PutString(Library::String::ULongToHexString(f.RFLAGS));
         if (hasError)
         {
-            con->PutString("ERR   :");
+            con->PutString("\nERR   :");
             con->PutString(Library::String::ULongToHexString(errorCode));
         }
 
-        auto cr2 = Kernel::Arch::x86_64::ReadCR3();
+        auto cr2 = Kernel::Arch::x86_64::ReadCR2();
         if (cr2)
         {
-            con->PutString("CR2   :");
+            con->PutString("\nCR2   :");
             con->PutString(Library::String::ULongToHexString(cr2));
         }
     }

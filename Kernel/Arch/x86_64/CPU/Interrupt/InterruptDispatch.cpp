@@ -1,6 +1,10 @@
 #include "InterruptDispatch.hpp"
 #include "PIC.hpp"
 #include "MSR.hpp"
+#include "Scheduler.hpp"
+#include "PreemptTrampolineEntry.hpp"
+#include "KernelConsole.hpp"
+#include "StringUtility.hpp"
 
 namespace Kernel::Arch::x86_64::Interrupts
 {
@@ -97,7 +101,7 @@ namespace Kernel::Arch::x86_64::Interrupts
         }
     }
 
-    static inline void Dispatch(std::uint8_t vec, const InterruptFrame& frame, bool hasError, std::uint64_t error) noexcept
+    static inline void Dispatch(std::uint8_t vec, InterruptFrame& frame, bool hasError, std::uint64_t error) noexcept
     {
         std::uint64_t count = ++gVectorCounts[vec];
 
@@ -129,16 +133,35 @@ namespace Kernel::Arch::x86_64::Interrupts
 
             EmitEOI(vec);
         }
+
+        if (vec == VEC_TIMER)
+        {
+            auto& cpu = Arch::x86_64::CPU();
+            if (cpu.PreemptDepth == 0 && Sched::NeedReschedule())
+            {
+                const auto rip = frame.RIP;
+                const auto tbeg = reinterpret_cast<std::uint64_t>(&PreemptTrampolineBegin);
+                const auto tend = reinterpret_cast<std::uint64_t>(&PreemptTrampolineEnd);
+                const auto tramp = reinterpret_cast<std::uint64_t>(&PreemptTrampolineEntry);
+
+                if (!(rip >= tbeg && rip < tend) && rip != tramp)
+                {
+                    Sched::Current()->PreemptResumeRIP = rip;
+                    frame.RIP = tramp;
+                    Sched::ClearReschedule();
+                }
+            }
+        }
     }
 }
 
 using Kernel::Arch::x86_64::Interrupts::InterruptFrame;
-static inline void DispatchNoError(std::uint8_t vector, const InterruptFrame* frame) noexcept
+static inline void DispatchNoError(std::uint8_t vector, InterruptFrame* frame) noexcept
 {
     Kernel::Arch::x86_64::Interrupts::Dispatch(vector, *frame, false, 0);
 }
 
-static inline void DispatchError(std::uint8_t vector, const InterruptFrame* frame, std::uint64_t errorCode) noexcept
+static inline void DispatchError(std::uint8_t vector, InterruptFrame* frame, std::uint64_t errorCode) noexcept
 {
     Kernel::Arch::x86_64::Interrupts::Dispatch(vector, *frame, true, errorCode);
 }

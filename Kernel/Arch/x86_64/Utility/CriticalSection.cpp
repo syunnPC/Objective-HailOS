@@ -5,25 +5,25 @@ namespace Kernel::Arch::x86_64
     void StartCriticalSection()
     {
         InCritical = true;
-        asm volatile("cli");
+        asm volatile("cli" ::: "memory");
     }
 
     void EndCriticalSection()
     {
         InCritical = false;
-        asm volatile("sti");
+        asm volatile("sti" ::: "memory");
     }
 
     void EnableInterrupt()
     {
         if (!InCritical)
         {
-            asm volatile("sti");
+            asm volatile("sti" ::: "memory");
         }
     }
 
     void DisableInterrupt()
     {
-        asm volatile("cli");
+        asm volatile("cli" ::: "memory");
     }
 }

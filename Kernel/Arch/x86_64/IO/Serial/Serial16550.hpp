@@ -139,6 +139,8 @@ namespace Kernel::Arch::x86_64::IO::Serial
             {
                 Sync::CPURelax();
             }
+
+            Write("\n");
         }
 
         inline std::uint16_t BasePort() const noexcept

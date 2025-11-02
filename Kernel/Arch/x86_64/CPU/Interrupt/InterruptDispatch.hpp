@@ -19,6 +19,13 @@ namespace Kernel::Arch::x86_64::Interrupts
         std::uint64_t SS;
     };
 
+    static_assert(sizeof(InterruptFrame) == 5 * 8, "InterruptFrame must be 40 bytes");
+    static_assert(offsetof(InterruptFrame, RIP) == 0, "RIP must be at +0");
+    static_assert(offsetof(InterruptFrame, CS) == 8, "CS must be at +8");
+    static_assert(offsetof(InterruptFrame, RFLAGS) == 16, "RFLAGS must be at +16");
+    static_assert(offsetof(InterruptFrame, RSP) == 24, "RSP must be at +24");
+    static_assert(offsetof(InterruptFrame, SS) == 32, "SS must be at +32");
+
     struct InterruptEvent
     {
         std::uint8_t Vector;

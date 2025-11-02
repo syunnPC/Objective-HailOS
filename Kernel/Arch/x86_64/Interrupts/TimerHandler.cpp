@@ -9,7 +9,6 @@ namespace
     {
         Kernel::Arch::x86_64::CPU().TickCount++;
         Kernel::Sched::OnTimerTick();
-        Kernel::Arch::x86_64::APIC::EndOfInterrupt();
     }
 }
 

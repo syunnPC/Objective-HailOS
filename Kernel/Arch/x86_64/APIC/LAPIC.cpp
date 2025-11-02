@@ -95,7 +95,7 @@ namespace Kernel::Arch::x86_64::APIC
         {
             spuriousVector = 0xFF;
         }
-        if (spuriousVector < 0x20)
+        if (errorVector < 0x20)
         {
             errorVector = 0xF1;
         }
@@ -145,7 +145,7 @@ namespace Kernel::Arch::x86_64::APIC
 
     void ConfigureTimer(std::uint8_t vector, std::uint8_t divideShift, std::uint32_t initialCount, bool periodic) noexcept
     {
-        if (gLAPICMMIO)
+        if (!gLAPICMMIO)
         {
             Enable();
         }
@@ -162,7 +162,7 @@ namespace Kernel::Arch::x86_64::APIC
 
     void MaskTimer(bool masked) noexcept
     {
-        if (gLAPICMMIO)
+        if (!gLAPICMMIO)
         {
             return;
         }

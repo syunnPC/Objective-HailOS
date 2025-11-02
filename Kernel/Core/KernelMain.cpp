@@ -23,6 +23,7 @@
 #include "Scheduler.hpp"
 #include "CPUID.hpp"
 #include "APICInit.hpp"
+#include "ControlRegisters.hpp"
 
 #include <new>
 
@@ -43,11 +44,26 @@ namespace
         Kernel::ACPI::RSDPtr* RSDP;
     } __attribute__((packed));
 
+    void EnableFPUSSE() noexcept
+    {
+        auto cr0 = Kernel::Arch::x86_64::ReadCR0();
+        cr0 &= ~(1ull << 2);
+        cr0 |= (1ull << 1);
+        cr0 |= (1ull << 5);
+        Kernel::Arch::x86_64::WriteCR0(cr0);
+
+        auto cr4 = Kernel::Arch::x86_64::ReadCR4();
+        cr4 |= (1ull << 9);
+        cr4 |= (1ull << 10);
+        Kernel::Arch::x86_64::WriteCR4(cr4);
+    }
+
     inline void InitCPU()
     {
         //GDT,TSS,IDTの初期化
         Kernel::Arch::x86_64::InitGDTAndTSS(Kernel::Arch::x86_64::KernelStackTop);
         Kernel::Arch::x86_64::InitIDT();
+        EnableFPUSSE();
     }
 
     inline auto InitMemory(BootInfo* info)
@@ -62,7 +78,7 @@ namespace
         bool ok = Kernel::Arch::x86_64::BuildIdentityMap2M(info->MemInfo, cr3, *allocator);
         if (ok)
         {
-            Kernel::Arch::x86_64::LoadCR3(cr3);
+            Kernel::Arch::x86_64::WriteCR3(cr3);
         }
         else
         {
@@ -104,8 +120,15 @@ namespace
                 con->PutString("Greetings from Worker B!\n");
                 next += 4000;
             }
+        }
+    }
 
-            Kernel::Sched::Yield();
+    void WorkerC(void*)
+    {
+        volatile std::uint64_t ctr;
+        while (true)
+        {
+            ++ctr;
         }
     }
 
@@ -114,6 +137,7 @@ namespace
         Kernel::Sched::Init();
         Kernel::Sched::CreateAndEnqueue("WorkerA", &WorkerA, nullptr);
         Kernel::Sched::CreateAndEnqueue("WorkerB", &WorkerB, nullptr);
+        Kernel::Sched::CreateAndEnqueue("WorkerC", &WorkerC, nullptr);
         Kernel::Sched::Start();
     }
 }
@@ -147,14 +171,16 @@ extern "C" void main(BootInfo* info)
     bool ok = ACPI::ParseMADT(info->RSDP, madt);
     if (!ok)
     {
-        PANIC(Status::STATUS_ERROR, 0);
+        out->PutString("Failed to parse MADT.\n");
     }
-
-    //IOAPIC初期化
-    Arch::x86_64::APIC::IOAPIC* ioapics = static_cast<Arch::x86_64::APIC::IOAPIC*>(allocator->AllocatePage(sizeof(Arch::x86_64::APIC::IOAPIC) * madt.IOAPICCount));
-    for (std::size_t i = 0; i < madt.IOAPICCount; ++i)
+    else
     {
-        (void)new(reinterpret_cast<void*>(reinterpret_cast<std::uintptr_t>(ioapics) + i * sizeof(Arch::x86_64::APIC::IOAPIC))) Arch::x86_64::APIC::IOAPIC(madt.IOAPICs[i].Phys, madt.IOAPICs[i].GSIBase);
+        //IOAPIC初期化
+        Arch::x86_64::APIC::IOAPIC* ioapics = static_cast<Arch::x86_64::APIC::IOAPIC*>(allocator->AllocatePage(sizeof(Arch::x86_64::APIC::IOAPIC) * madt.IOAPICCount));
+        for (std::size_t i = 0; i < madt.IOAPICCount; ++i)
+        {
+            (void)new(reinterpret_cast<void*>(reinterpret_cast<std::uintptr_t>(ioapics) + i * sizeof(Arch::x86_64::APIC::IOAPIC))) Arch::x86_64::APIC::IOAPIC(madt.IOAPICs[i].Phys, madt.IOAPICs[i].GSIBase);
+        }
     }
 
     InitPerCPUAndTime(info);
